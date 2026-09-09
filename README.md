@@ -2,7 +2,7 @@
 
 Read-only local web app for EverQuest Legends inventory analysis.
 
-This project is split from the desktop app so web releases can move independently without affecting the desktop binary workflow.
+A static, frontend-only site — no backend, no API, no server component. Everything runs client-side in the browser.
 
 ## What this project does
 
@@ -19,7 +19,7 @@ This project is split from the desktop app so web releases can move independentl
 
 - Read-only behavior only
 - No gameplay automation
-- No backend upload required for local use
+- No backend, no API calls, no data ever leaves your browser
 
 ## Local run
 

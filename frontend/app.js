@@ -1,4 +1,6 @@
 const fileInput = document.getElementById("inventoryFile");
+const fileHelpToggle = document.getElementById("fileHelpToggle");
+const fileHelpPanel = document.getElementById("fileHelpPanel");
 const dropZone = document.getElementById("dropZone");
 const fileNameNode = document.getElementById("fileName");
 const themeToggleBtn = document.getElementById("themeToggle");
@@ -25,6 +27,7 @@ const detailProjection = document.getElementById("detailProjection");
 const detailProgressBar = document.getElementById("detailProgressBar");
 const hideMaxedInput = document.getElementById("hideMaxed");
 const hideSkyInput = document.getElementById("hideSky");
+const hideEpicInput = document.getElementById("hideEpic");
 const filterDropdown = document.getElementById("filterDropdown");
 const filterMenuButton = document.getElementById("filterMenuButton");
 const filterMenu = document.getElementById("filterMenu");
@@ -186,12 +189,43 @@ function createTierBadge(tierText) {
   return cell;
 }
 
+function createDetailRow(tierText, text, extraText) {
+  const row = document.createElement("div");
+  row.className = "detail-row";
+
+  if (tierText != null) {
+    const chip = document.createElement("span");
+    chip.className = "chip-tier";
+    chip.textContent = tierText;
+    row.appendChild(chip);
+  }
+
+  const label = document.createElement("span");
+  label.textContent = text;
+  row.appendChild(label);
+
+  if (extraText != null) {
+    const extra = document.createElement("span");
+    extra.textContent = extraText;
+    row.appendChild(extra);
+  }
+
+  return row;
+}
+
+function createDetailTitle(text) {
+  const title = document.createElement("p");
+  title.className = "detail-title";
+  title.textContent = text;
+  return title;
+}
+
 function renderConfirmedRows(confirmed) {
   confirmedTableBody.innerHTML = "";
   if (confirmed.length === 0) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
-    td.colSpan = 5;
+    td.colSpan = 6;
     td.textContent = "No confirmed merge groups match your filters.";
     tr.appendChild(td);
     confirmedTableBody.appendChild(tr);
@@ -204,6 +238,7 @@ function renderConfirmedRows(confirmed) {
       tr.classList.add("selected");
     }
     tr.appendChild(createCell(row.item_name));
+    tr.appendChild(createCell(String(row.item_id)));
     tr.appendChild(createCell(row.keep_location));
     tr.appendChild(createCell(String(row.donor_count)));
     tr.appendChild(createCell(String(row.donor_xp)));
@@ -257,12 +292,16 @@ function filterRows(payload) {
   const search = searchInput.value.trim().toLowerCase();
   const hideMaxed = hideMaxedInput.checked;
   const hideSky = hideSkyInput.checked;
+  const hideEpic = hideEpicInput.checked;
 
   const confirmed = (payload.confirmed || []).filter((row) => {
     if (hideMaxed && row.maxed) {
       return false;
     }
     if (hideSky && row.is_sky_turnin) {
+      return false;
+    }
+    if (hideEpic && row.is_epic_quest_item) {
       return false;
     }
     if (!search) {
@@ -275,6 +314,9 @@ function filterRows(payload) {
 
   const possible = (payload.possible || []).filter((row) => {
     if (hideSky && row.is_sky_turnin) {
+      return false;
+    }
+    if (hideEpic && row.is_epic_quest_item) {
       return false;
     }
     if (!search) {
@@ -303,16 +345,22 @@ function renderDetail(row) {
   detailItemName.textContent = row.item_name;
   detailItemMeta.textContent = `ID ${row.item_id}`;
 
-  detailKeep.innerHTML = [
-    '<p class="detail-title">Keep</p>',
-    `<div class="detail-row"><span class="chip-tier">+${row.keep_tier}</span><span>${row.keep_location}</span></div>`,
-  ].join("");
+  detailKeep.innerHTML = "";
+  detailKeep.appendChild(createDetailTitle("Keep"));
+  detailKeep.appendChild(createDetailRow(`+${row.keep_tier}`, row.keep_location));
 
-  const donorRows = (row.plan?.donors || []).map((donor) => {
-    const xp = donor.tier >= 10 ? "NO XP" : `${2 ** donor.tier} XP`;
-    return `<div class="detail-row"><span class="chip-tier">+${donor.tier}</span><span>${donor.location}</span><span>${xp}</span></div>`;
-  }).join("");
-  detailFeed.innerHTML = `<p class="detail-title">Feed</p>${donorRows || '<div class="detail-row"><span>No donors</span></div>'}`;
+  const donors = row.plan?.donors || [];
+  detailFeed.innerHTML = "";
+  detailFeed.appendChild(createDetailTitle("Feed"));
+  if (donors.length === 0) {
+    detailFeed.appendChild(createDetailRow(undefined, "No donors"));
+  } else {
+    for (const donor of donors) {
+      const xpValue = window.eqlAnalyzer.xpForTier(donor.tier);
+      const xp = xpValue == null ? "NO XP" : `${xpValue} XP`;
+      detailFeed.appendChild(createDetailRow(`+${donor.tier}`, donor.location, xp));
+    }
+  }
 
   detailDonorXp.textContent = `Donor XP: ${row.donor_xp}`;
   detailProjection.textContent = `Projection: ${row.projection || "-"}`;
@@ -354,7 +402,11 @@ function renderActiveTab() {
 
   renderConfirmedRows(filtered.confirmed);
   renderPossibleRows(filtered.possible);
-  reportText.textContent = latestPayload.report_text || "";
+  reportText.textContent = window.eqlAnalyzer.buildReport(
+    latestPayload.meta?.filename || "uploaded-inventory.txt",
+    filtered.confirmed.map((row) => row.items),
+    filtered.possible.map((row) => row.items),
+  );
 
   const selected = filtered.confirmed.find((row) => row.item_id === selectedConfirmedId)
     || filtered.confirmed[0]
@@ -488,6 +540,7 @@ clearBtn.addEventListener("click", () => {
   latestPayload = null;
   hideMaxedInput.checked = false;
   hideSkyInput.checked = false;
+  hideEpicInput.checked = false;
   setActiveTab("confirmed");
   resetResults();
   setStatus("Cleared. Choose a file and analyze.");
@@ -504,6 +557,7 @@ fileInput.addEventListener("change", () => {
 
 hideMaxedInput.addEventListener("change", applyFilters);
 hideSkyInput.addEventListener("change", applyFilters);
+hideEpicInput.addEventListener("change", applyFilters);
 searchInput.addEventListener("input", applyFilters);
 tabConfirmedBtn.addEventListener("click", tabFromButton);
 tabPossibleBtn.addEventListener("click", tabFromButton);
@@ -511,6 +565,11 @@ tabReportBtn.addEventListener("click", tabFromButton);
 themeToggleBtn.addEventListener("click", toggleTheme);
 detailToggleBtn.addEventListener("click", () => {
   setDetailCollapsed(!detailCollapsed);
+});
+fileHelpToggle.addEventListener("click", () => {
+  const isHidden = fileHelpPanel.hidden;
+  fileHelpPanel.hidden = !isHidden;
+  fileHelpToggle.setAttribute("aria-expanded", String(isHidden));
 });
 
 initTheme();

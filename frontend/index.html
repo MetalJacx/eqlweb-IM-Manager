@@ -3,31 +3,37 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>eqlweb-IM-Manager</title>
+  <title>EQL Inventory Manager Tool</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="bg-shape bg-shape-a" aria-hidden="true"></div>
-  <div class="bg-shape bg-shape-b" aria-hidden="true"></div>
-
   <main class="shell">
     <header class="hero card reveal">
       <div class="hero-top">
         <div class="hero-main">
           <p class="eyebrow">PUBLIC PREVIEW</p>
-          <h1>eqlweb-IM-Manager</h1>
-          <p class="lede">Local read-only merge analysis.</p>
+          <h1>EQL Inventory Manager Tool</h1>
         </div>
         <button id="themeToggle" class="ghost toggle-theme" type="button">Switch to Light</button>
       </div>
+      <p class="privacy-note">🔒 Runs entirely in your browser. Your inventory export is never uploaded or sent anywhere — all parsing and analysis happen locally on your device.</p>
     </header>
 
     <section class="controls card reveal delay-1">
       <div class="field">
-        <label for="inventoryFile">Inventory Export File</label>
+        <div class="field-label-row">
+          <label for="inventoryFile">Inventory Export File</label>
+          <button id="fileHelpToggle" class="help-toggle" type="button" aria-expanded="false" aria-controls="fileHelpPanel" aria-label="How do I get this file?">?</button>
+        </div>
+        <p id="fileHelpPanel" class="help-panel" hidden>
+          In-game, type <code>/outputfile inventory</code>. This creates a
+          <em>Character</em>_<em>Server</em>-Inventory.txt file in
+          C:\Users\Public\Daybreak Game Company\Installed Games\EverQuest Legends (or your
+          custom install directory). Upload that file to begin to analyze it.
+        </p>
         <div id="dropZone" class="dropzone" role="button" tabindex="0" aria-label="Drop inventory file here or click to choose">
           <p id="fileName" class="dropzone-file">No file selected</p>
           <p class="dropzone-help">Drag and drop your file here, or click to browse.</p>
@@ -47,8 +53,8 @@
           <button class="tab-btn active" id="tabConfirmed" type="button" data-tab="confirmed">
             Confirmed merges <span id="confirmedCount">0</span>
           </button>
-          <button class="tab-btn" id="tabPossible" type="button" data-tab="possible">
-            Possible +0 duplicates <span id="possibleCount">0</span>
+          <button class="tab-btn" id="tabPossible" type="button" data-tab="possible" title="Duplicate items with no visible tier stamp - can't be confirmed as mergeable gear">
+            Possible duplicates <span id="possibleCount">0</span>
           </button>
           <button class="tab-btn" id="tabReport" type="button" data-tab="report">Full report</button>
         </div>
@@ -66,6 +72,10 @@
                 <input id="hideSky" type="checkbox" />
                 Hide Sky turn-ins
               </label>
+              <label class="filter-option" for="hideEpic">
+                <input id="hideEpic" type="checkbox" />
+                Hide Epic Quest items
+              </label>
             </div>
           </div>
           <input id="searchInput" class="search-input" type="search" placeholder="Search item, ID, location..." />
@@ -79,6 +89,7 @@
               <thead>
                 <tr>
                   <th>Item</th>
+                  <th>ID</th>
                   <th>Keep location</th>
                   <th>Donors</th>
                   <th>Donor XP</th>
@@ -129,6 +140,11 @@
         </aside>
       </div>
     </section>
+
+    <footer class="site-footer">
+      <p>Version 1.0</p>
+      <p>Created by MetalJacx (Discord: @metaljacx), EQLC: Metaljacx - Neriak</p>
+    </footer>
   </main>
 
   <script src="analyzer.js"></script>
