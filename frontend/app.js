@@ -1,6 +1,7 @@
 const fileInput = document.getElementById("inventoryFile");
 const dropZone = document.getElementById("dropZone");
 const fileNameNode = document.getElementById("fileName");
+const themeToggleBtn = document.getElementById("themeToggle");
 const hideMaxedInput = document.getElementById("hideMaxed");
 const hideSkyInput = document.getElementById("hideSky");
 const analyzeBtn = document.getElementById("analyzeBtn");
@@ -19,10 +20,35 @@ const possibleCountNode = document.getElementById("possibleCount");
 
 let selectedFile = null;
 let latestPayload = null;
+let statusIsError = false;
+
+function applyTheme(themeName) {
+  const theme = themeName === "light" ? "light" : "dark";
+  document.body.setAttribute("data-theme", theme);
+  window.localStorage.setItem("eql_theme", theme);
+  themeToggleBtn.textContent = theme === "dark" ? "Switch to Light" : "Switch to Dark";
+  setStatus(statusNode.textContent, statusIsError);
+}
+
+function toggleTheme() {
+  const current = document.body.getAttribute("data-theme") || "dark";
+  applyTheme(current === "dark" ? "light" : "dark");
+}
+
+function initTheme() {
+  const stored = window.localStorage.getItem("eql_theme");
+  const preferredDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  applyTheme(stored || (preferredDark ? "dark" : "light"));
+}
 
 function setStatus(message, isError = false) {
+  statusIsError = isError;
   statusNode.textContent = message;
-  statusNode.style.color = isError ? "#b42318" : "#5c6779";
+  const styles = getComputedStyle(document.body);
+  const color = isError
+    ? styles.getPropertyValue("--danger").trim()
+    : styles.getPropertyValue("--status-muted").trim();
+  statusNode.style.color = color;
 }
 
 function resetResults() {
@@ -229,5 +255,7 @@ fileInput.addEventListener("change", () => {
 });
 hideMaxedInput.addEventListener("change", applyFilters);
 hideSkyInput.addEventListener("change", applyFilters);
+themeToggleBtn.addEventListener("click", toggleTheme);
+initTheme();
 attachDropZoneEvents();
 setStatus("Local browser mode enabled. Your file is analyzed in this browser.");
