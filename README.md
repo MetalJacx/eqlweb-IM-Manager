@@ -19,17 +19,17 @@ This project is split from the desktop app so web releases can move independentl
 - No gameplay automation
 - No backend upload required for local use
 
-## Frontend app
+## Local run
 
 Static frontend files are in [frontend/index.html](frontend/index.html).
 
-Open locally:
+Start a local file server:
 
 ```bash
 python -m http.server 4173 --directory frontend
 ```
 
-Then open:
+Open in browser:
 
 ```text
 http://127.0.0.1:4173
