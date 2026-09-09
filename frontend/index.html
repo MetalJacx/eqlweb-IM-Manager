@@ -16,14 +16,13 @@
   <main class="shell">
     <header class="hero card reveal">
       <div class="hero-top">
-      <p class="eyebrow">PUBLIC PREVIEW</p>
-      <button id="themeToggle" class="ghost toggle-theme" type="button">Switch to Light</button>
+        <div class="hero-main">
+          <p class="eyebrow">PUBLIC PREVIEW</p>
+          <h1>eqlweb-IM-Manager</h1>
+          <p class="lede">Local read-only merge analysis.</p>
+        </div>
+        <button id="themeToggle" class="ghost toggle-theme" type="button">Switch to Light</button>
       </div>
-      <h1>eqlweb-IM-Manager</h1>
-      <p class="lede">
-        Drop an EQL inventory export and get instant read-only merge analysis.
-      </p>
-      <p class="note">No character data is stored by this app.</p>
     </header>
 
     <section class="controls card reveal delay-1">
@@ -54,14 +53,21 @@
           <button class="tab-btn" id="tabReport" type="button" data-tab="report">Full report</button>
         </div>
         <div class="toolbar-actions">
-          <label class="filter-pill" for="hideMaxed">
-            <input id="hideMaxed" type="checkbox" />
-            Hide already +10
-          </label>
-          <label class="filter-pill" for="hideSky">
-            <input id="hideSky" type="checkbox" />
-            Hide Sky turn-ins
-          </label>
+          <div class="filter-dropdown" id="filterDropdown">
+            <button id="filterMenuButton" class="ghost filter-menu-button" type="button" aria-haspopup="true" aria-expanded="false">
+              Filters
+            </button>
+            <div id="filterMenu" class="filter-menu" hidden>
+              <label class="filter-option" for="hideMaxed">
+                <input id="hideMaxed" type="checkbox" />
+                Hide already +10
+              </label>
+              <label class="filter-option" for="hideSky">
+                <input id="hideSky" type="checkbox" />
+                Hide Sky turn-ins
+              </label>
+            </div>
+          </div>
           <input id="searchInput" class="search-input" type="search" placeholder="Search item, ID, location..." />
         </div>
       </div>
@@ -73,8 +79,6 @@
               <thead>
                 <tr>
                   <th>Item</th>
-                  <th>ID</th>
-                  <th>Keep</th>
                   <th>Keep location</th>
                   <th>Donors</th>
                   <th>Donor XP</th>
@@ -92,7 +96,6 @@
               <thead>
                 <tr>
                   <th>Item</th>
-                  <th>ID</th>
                   <th>Copies</th>
                   <th>Locations</th>
                 </tr>
@@ -111,7 +114,10 @@
         </article>
 
         <aside class="card detail-panel" id="detailPanel">
-          <h2 id="detailItemName">No item selected</h2>
+          <div class="detail-head">
+            <h2 id="detailItemName">No item selected</h2>
+            <button id="detailToggle" class="ghost detail-toggle" type="button" aria-expanded="true">Collapse</button>
+          </div>
           <p class="detail-sub" id="detailItemMeta">Select a confirmed merge group.</p>
           <div class="detail-block" id="detailKeep"></div>
           <div class="detail-block" id="detailFeed"></div>

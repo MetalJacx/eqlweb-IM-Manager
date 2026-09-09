@@ -13,7 +13,9 @@ const tabReportBtn = document.getElementById("tabReport");
 const panelConfirmed = document.getElementById("panelConfirmed");
 const panelPossible = document.getElementById("panelPossible");
 const panelReport = document.getElementById("panelReport");
+const contentGrid = document.querySelector(".content-grid");
 const detailPanel = document.getElementById("detailPanel");
+const detailToggleBtn = document.getElementById("detailToggle");
 const detailItemName = document.getElementById("detailItemName");
 const detailItemMeta = document.getElementById("detailItemMeta");
 const detailKeep = document.getElementById("detailKeep");
@@ -23,6 +25,9 @@ const detailProjection = document.getElementById("detailProjection");
 const detailProgressBar = document.getElementById("detailProgressBar");
 const hideMaxedInput = document.getElementById("hideMaxed");
 const hideSkyInput = document.getElementById("hideSky");
+const filterDropdown = document.getElementById("filterDropdown");
+const filterMenuButton = document.getElementById("filterMenuButton");
+const filterMenu = document.getElementById("filterMenu");
 const searchInput = document.getElementById("searchInput");
 const confirmedTableBody = document.querySelector("#confirmedTable tbody");
 const possibleTableBody = document.querySelector("#possibleTable tbody");
@@ -34,6 +39,61 @@ let selectedFile = null;
 let latestPayload = null;
 let statusIsError = false;
 let selectedConfirmedId = null;
+let detailCollapsed = false;
+let filterMenuOpen = false;
+
+const pickerSupported = typeof window.showOpenFilePicker === "function";
+
+function setDetailCollapsed(collapsed) {
+  detailCollapsed = Boolean(collapsed);
+  detailPanel.classList.toggle("collapsed", detailCollapsed);
+  contentGrid.classList.toggle("details-collapsed", detailCollapsed);
+  detailToggleBtn.textContent = detailCollapsed ? "Expand" : "Collapse";
+  detailToggleBtn.setAttribute("aria-expanded", String(!detailCollapsed));
+  window.localStorage.setItem("eql_detail_collapsed", detailCollapsed ? "1" : "0");
+}
+
+function initDetailPanelState() {
+  const stored = window.localStorage.getItem("eql_detail_collapsed");
+  setDetailCollapsed(stored === "1");
+}
+
+function setFilterMenuOpen(open) {
+  filterMenuOpen = Boolean(open);
+  filterMenu.hidden = !filterMenuOpen;
+  filterMenuButton.setAttribute("aria-expanded", String(filterMenuOpen));
+}
+
+function toggleFilterMenu() {
+  setFilterMenuOpen(!filterMenuOpen);
+}
+
+function attachFilterDropdownEvents() {
+  filterMenuButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    toggleFilterMenu();
+  });
+
+  document.addEventListener("pointerdown", (event) => {
+    if (!filterMenuOpen) {
+      return;
+    }
+    if (filterDropdown.contains(event.target)) {
+      return;
+    }
+    setFilterMenuOpen(false);
+  }, true);
+
+  filterMenu.addEventListener("change", () => {
+    setFilterMenuOpen(false);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      setFilterMenuOpen(false);
+    }
+  });
+}
 
 function applyTheme(themeName) {
   const theme = themeName === "light" ? "light" : "dark";
@@ -78,6 +138,39 @@ function setSelectedFile(file) {
   fileNameNode.textContent = file ? file.name : "No file selected";
 }
 
+async function chooseFileWithPicker() {
+  if (!pickerSupported) {
+    fileInput.click();
+    return;
+  }
+
+  try {
+    const [handle] = await window.showOpenFilePicker({
+      id: "eql-inventory-file",
+      multiple: false,
+      types: [{
+        description: "Text files",
+        accept: {
+          "text/plain": [".txt"],
+        },
+      }],
+    });
+
+    if (!handle) {
+      return;
+    }
+
+    const file = await handle.getFile();
+    setSelectedFile(file);
+    setStatus(`Loaded ${file.name}.`);
+  } catch (error) {
+    const isCancel = error instanceof DOMException && error.name === "AbortError";
+    if (!isCancel) {
+      setStatus("Could not open file picker. Try drag/drop or click to browse.", true);
+    }
+  }
+}
+
 function createCell(text) {
   const cell = document.createElement("td");
   cell.textContent = text;
@@ -98,7 +191,7 @@ function renderConfirmedRows(confirmed) {
   if (confirmed.length === 0) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
-    td.colSpan = 7;
+    td.colSpan = 5;
     td.textContent = "No confirmed merge groups match your filters.";
     tr.appendChild(td);
     confirmedTableBody.appendChild(tr);
@@ -111,8 +204,6 @@ function renderConfirmedRows(confirmed) {
       tr.classList.add("selected");
     }
     tr.appendChild(createCell(row.item_name));
-    tr.appendChild(createCell(String(row.item_id)));
-    tr.appendChild(createTierBadge(`+${row.keep_tier}`));
     tr.appendChild(createCell(row.keep_location));
     tr.appendChild(createCell(String(row.donor_count)));
     tr.appendChild(createCell(String(row.donor_xp)));
@@ -130,7 +221,7 @@ function renderPossibleRows(possible) {
   if (possible.length === 0) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
-    td.colSpan = 4;
+    td.colSpan = 3;
     td.textContent = "No possible +0 groups match your filters.";
     tr.appendChild(td);
     possibleTableBody.appendChild(tr);
@@ -140,7 +231,6 @@ function renderPossibleRows(possible) {
   for (const row of possible) {
     const tr = document.createElement("tr");
     tr.appendChild(createCell(row.item_name));
-    tr.appendChild(createCell(String(row.item_id)));
     tr.appendChild(createCell(String(row.copy_count)));
     const locations = (row.items || []).map((item) => item.location).join(", ");
     tr.appendChild(createCell(locations || "-"));
@@ -237,14 +327,20 @@ function renderDetail(row) {
 }
 
 function setActiveTab(tabName) {
+  const isConfirmed = tabName === "confirmed";
+
   tabConfirmedBtn.classList.toggle("active", tabName === "confirmed");
   tabPossibleBtn.classList.toggle("active", tabName === "possible");
   tabReportBtn.classList.toggle("active", tabName === "report");
 
-  panelConfirmed.hidden = tabName !== "confirmed";
+  panelConfirmed.hidden = !isConfirmed;
   panelPossible.hidden = tabName !== "possible";
   panelReport.hidden = tabName !== "report";
-  detailPanel.hidden = tabName !== "confirmed";
+  detailPanel.hidden = !isConfirmed;
+  contentGrid.classList.toggle("single-panel", !isConfirmed);
+
+  // Prevent the filters menu from lingering over other tabs.
+  setFilterMenuOpen(false);
 }
 
 function renderActiveTab() {
@@ -359,11 +455,13 @@ function attachDropZoneEvents() {
     setStatus(`Loaded ${file.name}. Click Analyze Inventory.`);
   });
 
-  dropZone.addEventListener("click", () => fileInput.click());
+  dropZone.addEventListener("click", () => {
+    void chooseFileWithPicker();
+  });
   dropZone.addEventListener("keydown", (event) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      fileInput.click();
+      void chooseFileWithPicker();
     }
   });
 }
@@ -411,9 +509,14 @@ tabConfirmedBtn.addEventListener("click", tabFromButton);
 tabPossibleBtn.addEventListener("click", tabFromButton);
 tabReportBtn.addEventListener("click", tabFromButton);
 themeToggleBtn.addEventListener("click", toggleTheme);
+detailToggleBtn.addEventListener("click", () => {
+  setDetailCollapsed(!detailCollapsed);
+});
 
 initTheme();
+initDetailPanelState();
 attachDropZoneEvents();
+attachFilterDropdownEvents();
 setActiveTab("confirmed");
 renderDetail(null);
 setStatus("Local browser mode enabled. Your file is analyzed in this browser.");
