@@ -12,6 +12,8 @@ This project is split from the desktop app so web releases can move independentl
 - Projects merge XP and tier progress
 - Runs analysis fully in your browser using JavaScript
 - Provides a browser UI for file upload and result viewing
+- Supports drag-and-drop inventory file upload
+- Includes filters for Hide already +10 and Hide Sky turn-ins
 
 ## Safety boundaries
 

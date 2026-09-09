@@ -79,7 +79,7 @@ body {
 
 h1 {
   margin: 10px 0 8px;
-  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-size: clamp(1.45rem, 3vw, 2.1rem);
   line-height: 1.1;
 }
 
@@ -122,6 +122,63 @@ select {
   padding: 11px 12px;
   font: inherit;
   background: #fff;
+}
+
+.dropzone {
+  border: 1px dashed #9ab2cf;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f8fbff, #f0f6ff);
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
+}
+
+.dropzone:hover,
+.dropzone:focus {
+  border-color: #0e6ba8;
+  background: linear-gradient(180deg, #f5faff, #eaf4ff);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.dropzone.dragging {
+  border-color: #0e6ba8;
+  background: linear-gradient(180deg, #eaf4ff, #deefff);
+}
+
+.dropzone-file {
+  margin: 0;
+  font-weight: 700;
+}
+
+.dropzone-help {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.filter-chip input {
+  accent-color: #0e6ba8;
 }
 
 .button-row {

@@ -26,7 +26,21 @@
     <section class="controls card reveal delay-1">
       <div class="field">
         <label for="inventoryFile">Inventory Export File</label>
-        <input id="inventoryFile" type="file" accept=".txt,text/plain" />
+        <div id="dropZone" class="dropzone" role="button" tabindex="0" aria-label="Drop inventory file here or click to choose">
+          <p id="fileName" class="dropzone-file">No file selected</p>
+          <p class="dropzone-help">Drag and drop your file here, or click to browse.</p>
+        </div>
+        <input id="inventoryFile" type="file" accept=".txt,text/plain" hidden />
+      </div>
+      <div class="filter-row">
+        <label class="filter-chip" for="hideMaxed">
+          <input id="hideMaxed" type="checkbox" />
+          Hide already +10
+        </label>
+        <label class="filter-chip" for="hideSky">
+          <input id="hideSky" type="checkbox" />
+          Hide Sky turn-ins
+        </label>
       </div>
       <div class="button-row">
         <button id="analyzeBtn" class="primary">Analyze Inventory</button>
