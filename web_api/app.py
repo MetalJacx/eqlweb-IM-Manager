@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import os
+
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from core.analysis import analyze_inventory_text
@@ -23,9 +26,34 @@ app = FastAPI(
 )
 
 
+def _allowed_origins() -> list[str]:
+    raw = os.environ.get("API_ALLOWED_ORIGINS", "*").strip()
+    if not raw:
+        return ["*"]
+    return [part.strip() for part in raw.split(",") if part.strip()]
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_allowed_origins(),
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/")
+def root() -> dict:
+    return {
+        "service": "eqlweb-IM-Manager API",
+        "docs": "/docs",
+        "health": "/health",
+    }
 
 
 @app.post("/analyze-text")

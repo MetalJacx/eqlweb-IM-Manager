@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>eqlweb-IM-Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg-shape bg-shape-a" aria-hidden="true"></div>
+  <div class="bg-shape bg-shape-b" aria-hidden="true"></div>
+
+  <main class="shell">
+    <header class="hero card reveal">
+      <p class="eyebrow">PUBLIC PREVIEW</p>
+      <h1>eqlweb-IM-Manager</h1>
+      <p class="lede">
+        Drop an EQL inventory export and get instant read-only merge analysis.
+      </p>
+      <p class="note">No character data is stored by this app.</p>
+    </header>
+
+    <section class="controls card reveal delay-1">
+      <div class="field">
+        <label for="apiBase">API Base URL</label>
+        <input id="apiBase" type="url" placeholder="https://your-api.onrender.com" />
+      </div>
+      <div class="field">
+        <label for="inventoryFile">Inventory Export File</label>
+        <input id="inventoryFile" type="file" accept=".txt,text/plain" />
+      </div>
+      <div class="button-row">
+        <button id="analyzeBtn" class="primary">Analyze Inventory</button>
+        <button id="clearBtn" class="ghost">Clear</button>
+      </div>
+      <p id="status" class="status">Choose a file and API URL to begin.</p>
+    </section>
+
+    <section class="metrics reveal delay-2" id="metrics" hidden>
+      <article class="metric card">
+        <p class="metric-label">Records</p>
+        <p class="metric-value" id="recordCount">0</p>
+      </article>
+      <article class="metric card">
+        <p class="metric-label">Confirmed</p>
+        <p class="metric-value success" id="confirmedCount">0</p>
+      </article>
+      <article class="metric card">
+        <p class="metric-label">Possible +0</p>
+        <p class="metric-value warning" id="possibleCount">0</p>
+      </article>
+    </section>
+
+    <section class="results-grid" id="resultsGrid" hidden>
+      <article class="card reveal delay-2">
+        <h2>Confirmed Merge Candidates</h2>
+        <div class="table-wrap">
+          <table id="confirmedTable">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>ID</th>
+                <th>Keep</th>
+                <th>Location</th>
+                <th>Donors</th>
+                <th>XP</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="card reveal delay-3">
+        <h2>Possible +0 Duplicates</h2>
+        <div class="table-wrap">
+          <table id="possibleTable">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>ID</th>
+                <th>Copies</th>
+                <th>Sky</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="card report reveal delay-3">
+        <div class="report-head">
+          <h2>Full Report</h2>
+          <button id="copyReportBtn" class="ghost">Copy</button>
+        </div>
+        <pre id="reportText"></pre>
+      </article>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
