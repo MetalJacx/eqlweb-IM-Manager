@@ -24,6 +24,10 @@ This project is split from the desktop app so web releases can move independentl
 - `GET /health`
 - `POST /analyze-text`
 - `POST /analyze-file`
+- `GET /quest-selector/quests`
+- `POST /quest-selector/generate-lootfile`
+
+Quest selector endpoints are phase-2 scaffolding to generate appendable lootfile text from a curated quest catalog.
 
 ## Frontend app
 
@@ -70,6 +74,7 @@ API_ALLOWED_ORIGINS=https://your-frontend-domain.vercel.app
 ```
 
 Multiple domains can be comma-separated.
+Current repo default in [render.yaml](render.yaml) is set to `https://eql-invman.onrender.com`.
 
 ## Tests
 
@@ -88,8 +93,8 @@ python -m unittest tests/test_core_analysis.py
 
 1. In Render, create a new Web Service from this repository.
 2. Use [render.yaml](render.yaml) or these values:
-	- Build command: `pip install -r requirements.txt`
-	- Start command: `uvicorn web_api.app:app --host 0.0.0.0 --port $PORT`
+   - Build command: `pip install -r requirements.txt`
+   - Start command: `uvicorn web_api.app:app --host 0.0.0.0 --port $PORT`
 3. Set `API_ALLOWED_ORIGINS` to your frontend domain.
 4. Copy the deployed API URL.
 
@@ -107,3 +112,7 @@ To auto-deploy Render from GitHub Actions:
 1. Create a Render Deploy Hook.
 2. Add GitHub repository secret `RENDER_DEPLOY_HOOK_URL`.
 3. Push to `main`.
+
+## Release operations
+
+Use [docs/PRODUCTION_RELEASE_CHECKLIST.md](docs/PRODUCTION_RELEASE_CHECKLIST.md) before opening public access.

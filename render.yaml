@@ -10,4 +10,4 @@ services:
       - key: PYTHON_VERSION
         value: 3.12.7
       - key: API_ALLOWED_ORIGINS
-        value: "*"
+        value: "https://eql-invman.onrender.com"

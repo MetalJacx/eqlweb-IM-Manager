@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from core.analysis import analyze_inventory_text
+from web_api.quest_selector import router as quest_selector_router
 
 
 class AnalyzeTextRequest(BaseModel):
@@ -27,9 +28,12 @@ app = FastAPI(
 
 
 def _allowed_origins() -> list[str]:
-    raw = os.environ.get("API_ALLOWED_ORIGINS", "*").strip()
+    raw = os.environ.get(
+        "API_ALLOWED_ORIGINS",
+        "http://127.0.0.1:4173,http://localhost:4173,http://127.0.0.1:8000",
+    ).strip()
     if not raw:
-        return ["*"]
+        return ["http://127.0.0.1:4173"]
     return [part.strip() for part in raw.split(",") if part.strip()]
 
 
@@ -40,6 +44,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(quest_selector_router)
 
 
 @app.get("/health")
