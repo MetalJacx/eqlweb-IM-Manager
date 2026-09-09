@@ -14,7 +14,7 @@ class AnalyzeTextRequest(BaseModel):
 
 
 app = FastAPI(
-    title="EQL Inventory Cleaner API",
+    title="eqlweb-IM-Manager API",
     version="0.1.0",
     description=(
         "Read-only analysis API for EverQuest Legends inventory exports. "

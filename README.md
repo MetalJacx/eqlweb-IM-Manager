@@ -1,4 +1,4 @@
-# EQL Inventory Cleaner Web API
+# eqlweb-IM-Manager
 
 Read-only web backend for EverQuest Legends inventory analysis.
 
