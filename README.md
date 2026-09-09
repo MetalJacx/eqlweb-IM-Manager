@@ -1,6 +1,6 @@
 # eqlweb-IM-Manager
 
-Read-only web app and backend for EverQuest Legends inventory analysis.
+Read-only web app and optional backend for EverQuest Legends inventory analysis.
 
 This project is split from the desktop app so web releases can move independently without affecting the desktop binary workflow.
 
@@ -10,7 +10,8 @@ This project is split from the desktop app so web releases can move independentl
 - Finds duplicate gear by item ID
 - Separates confirmed merge candidates from possible +0 duplicates
 - Projects merge XP and tier progress
-- Returns structured JSON and report text from the API
+- Supports local browser-side analysis in JavaScript (default mode)
+- Supports structured JSON and report text from the API (optional mode)
 - Provides a browser UI for file upload and result viewing
 
 ## Safety boundaries
@@ -45,9 +46,13 @@ Then open:
 http://127.0.0.1:4173
 ```
 
-Set API Base URL in the UI (default is `http://127.0.0.1:8000`).
+Default mode is Local Browser Mode, which does not require any API.
+
+Use Hosted API Mode only when you want a centralized backend.
 
 ## Local development
+
+If you only need browser mode, skip this section.
 
 Install dependencies:
 

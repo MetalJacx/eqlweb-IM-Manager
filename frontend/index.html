@@ -25,6 +25,13 @@
 
     <section class="controls card reveal delay-1">
       <div class="field">
+        <label for="analysisMode">Analysis Mode</label>
+        <select id="analysisMode">
+          <option value="local">Local Browser Mode (No API)</option>
+          <option value="api">Hosted API Mode</option>
+        </select>
+      </div>
+      <div class="field" id="apiField" hidden>
         <label for="apiBase">API Base URL</label>
         <input id="apiBase" type="url" placeholder="https://your-api.onrender.com" />
       </div>
@@ -36,7 +43,7 @@
         <button id="analyzeBtn" class="primary">Analyze Inventory</button>
         <button id="clearBtn" class="ghost">Clear</button>
       </div>
-      <p id="status" class="status">Choose a file and API URL to begin.</p>
+      <p id="status" class="status">Choose a file and click Analyze Inventory.</p>
     </section>
 
     <section class="metrics reveal delay-2" id="metrics" hidden>
@@ -101,6 +108,7 @@
     </section>
   </main>
 
+  <script src="analyzer.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
