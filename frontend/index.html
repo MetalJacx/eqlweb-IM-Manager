@@ -35,16 +35,6 @@
         </div>
         <input id="inventoryFile" type="file" accept=".txt,text/plain" hidden />
       </div>
-      <div class="filter-row">
-        <label class="filter-chip" for="hideMaxed">
-          <input id="hideMaxed" type="checkbox" />
-          Hide already +10
-        </label>
-        <label class="filter-chip" for="hideSky">
-          <input id="hideSky" type="checkbox" />
-          Hide Sky turn-ins
-        </label>
-      </div>
       <div class="button-row">
         <button id="analyzeBtn" class="primary">Analyze Inventory</button>
         <button id="clearBtn" class="ghost">Clear</button>
@@ -52,65 +42,86 @@
       <p id="status" class="status">Choose a file and click Analyze Inventory.</p>
     </section>
 
-    <section class="metrics reveal delay-2" id="metrics" hidden>
-      <article class="metric card">
-        <p class="metric-label">Records</p>
-        <p class="metric-value" id="recordCount">0</p>
-      </article>
-      <article class="metric card">
-        <p class="metric-label">Confirmed</p>
-        <p class="metric-value success" id="confirmedCount">0</p>
-      </article>
-      <article class="metric card">
-        <p class="metric-label">Possible +0</p>
-        <p class="metric-value warning" id="possibleCount">0</p>
-      </article>
-    </section>
-
-    <section class="results-grid" id="resultsGrid" hidden>
-      <article class="card reveal delay-2">
-        <h2>Confirmed Merge Candidates</h2>
-        <div class="table-wrap">
-          <table id="confirmedTable">
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>ID</th>
-                <th>Keep</th>
-                <th>Location</th>
-                <th>Donors</th>
-                <th>XP</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+    <section class="workspace reveal delay-2" id="workspace" hidden>
+      <div class="toolbar card">
+        <div class="tab-row">
+          <button class="tab-btn active" id="tabConfirmed" type="button" data-tab="confirmed">
+            Confirmed merges <span id="confirmedCount">0</span>
+          </button>
+          <button class="tab-btn" id="tabPossible" type="button" data-tab="possible">
+            Possible +0 duplicates <span id="possibleCount">0</span>
+          </button>
+          <button class="tab-btn" id="tabReport" type="button" data-tab="report">Full report</button>
         </div>
-      </article>
-
-      <article class="card reveal delay-3">
-        <h2>Possible +0 Duplicates</h2>
-        <div class="table-wrap">
-          <table id="possibleTable">
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>ID</th>
-                <th>Copies</th>
-                <th>Sky</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+        <div class="toolbar-actions">
+          <label class="filter-pill" for="hideMaxed">
+            <input id="hideMaxed" type="checkbox" />
+            Hide already +10
+          </label>
+          <label class="filter-pill" for="hideSky">
+            <input id="hideSky" type="checkbox" />
+            Hide Sky turn-ins
+          </label>
+          <input id="searchInput" class="search-input" type="search" placeholder="Search item, ID, location..." />
         </div>
-      </article>
+      </div>
 
-      <article class="card report reveal delay-3">
-        <div class="report-head">
-          <h2>Full Report</h2>
-          <button id="copyReportBtn" class="ghost">Copy</button>
-        </div>
-        <pre id="reportText"></pre>
-      </article>
+      <div class="content-grid">
+        <article class="card panel" id="panelConfirmed">
+          <div class="table-wrap">
+            <table id="confirmedTable">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>ID</th>
+                  <th>Keep</th>
+                  <th>Keep location</th>
+                  <th>Donors</th>
+                  <th>Donor XP</th>
+                  <th>Projection</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="card panel" id="panelPossible" hidden>
+          <div class="table-wrap">
+            <table id="possibleTable">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>ID</th>
+                  <th>Copies</th>
+                  <th>Locations</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="card panel" id="panelReport" hidden>
+          <div class="report-head">
+            <h2>Full Report</h2>
+            <button id="copyReportBtn" class="ghost">Copy</button>
+          </div>
+          <pre id="reportText"></pre>
+        </article>
+
+        <aside class="card detail-panel" id="detailPanel">
+          <h2 id="detailItemName">No item selected</h2>
+          <p class="detail-sub" id="detailItemMeta">Select a confirmed merge group.</p>
+          <div class="detail-block" id="detailKeep"></div>
+          <div class="detail-block" id="detailFeed"></div>
+          <div class="detail-footer">
+            <p id="detailDonorXp">Donor XP: 0</p>
+            <p id="detailProjection">Projection: -</p>
+            <div class="progress-track"><div id="detailProgressBar" class="progress-bar"></div></div>
+          </div>
+        </aside>
+      </div>
     </section>
   </main>
 
