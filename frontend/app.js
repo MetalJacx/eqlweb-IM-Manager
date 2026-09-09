@@ -578,4 +578,3 @@ attachDropZoneEvents();
 attachFilterDropdownEvents();
 setActiveTab("confirmed");
 renderDetail(null);
-setStatus("Local browser mode enabled. Your file is analyzed in this browser.");
