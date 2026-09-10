@@ -10,6 +10,21 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div class="app-shell">
+    <nav class="app-rail" aria-label="Tools">
+      <a class="rail-item active" href="index.html" aria-current="page">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v8l9 4 9-4V8"/><path d="M12 12v8"/></svg>
+        <span class="rail-label">Inventory Cleaner</span>
+      </a>
+      <a class="rail-item" href="quest-lootfilter.html">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h9a3 3 0 0 1 3 3v10a3 3 0 0 0 3 3"/><path d="M6 4a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h12"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+        <span class="rail-label">Quest LootFilter</span>
+      </a>
+      <a class="rail-item" href="lootfilter-editor.html">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        <span class="rail-label">Lootfilter Editor</span>
+      </a>
+    </nav>
   <main class="shell">
     <header class="hero card reveal">
       <div class="hero-top">
@@ -141,12 +156,15 @@
     </section>
 
     <footer class="site-footer">
-      <p>Version 1.0</p>
+      <p>Version 1.1</p>
       <p>Created by MetalJacx (Discord: @metaljacx), EQLC: Metaljacx - Neriak</p>
     </footer>
   </main>
+  </div>
 
+  <script src="theme.js"></script>
   <script src="analyzer.js"></script>
   <script src="app.js"></script>
+  <script src="footer-disclaimer.js"></script>
 </body>
 </html>

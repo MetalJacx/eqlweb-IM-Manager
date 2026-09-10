@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quest LootFilter - EQL Inventory Manager Tool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <nav class="app-rail" aria-label="Tools">
+      <a class="rail-item" href="index.html">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v8l9 4 9-4V8"/><path d="M12 12v8"/></svg>
+        <span class="rail-label">Inventory Cleaner</span>
+      </a>
+      <a class="rail-item active" href="quest-lootfilter.html" aria-current="page">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h9a3 3 0 0 1 3 3v10a3 3 0 0 0 3 3"/><path d="M6 4a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h12"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+        <span class="rail-label">Quest LootFilter</span>
+      </a>
+      <a class="rail-item" href="lootfilter-editor.html">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        <span class="rail-label">Lootfilter Editor</span>
+      </a>
+    </nav>
+    <main class="shell">
+      <header class="hero card reveal">
+        <div class="hero-top">
+          <div class="hero-main">
+            <h1>Quest LootFilter</h1>
+            <span class="beta-badge">Beta</span>
+          </div>
+          <button id="themeToggle" class="ghost toggle-theme" type="button">Switch to Light</button>
+        </div>
+        <p class="privacy-note">🔒 Runs entirely in your browser. Nothing is uploaded or sent anywhere.</p>
+      </header>
+
+      <section class="controls card reveal delay-1">
+        <p class="status">Pick a category below, choose which classes and items to keep, then download a loot
+          filter file you can merge into your own.</p>
+      </section>
+
+      <section class="workspace reveal delay-2">
+        <article class="card panel">
+          <div class="field-label-row">
+            <label for="categorySelect">Category</label>
+            <select id="categorySelect" class="category-select"></select>
+            <span id="categoryMeta" class="muted-note"></span>
+            <button id="classHelpToggle" class="help-toggle" type="button" aria-expanded="false" aria-controls="classHelpPanel" aria-label="What do the badges mean?">?</button>
+          </div>
+          <p id="classHelpPanel" class="help-panel" hidden>
+            Item IDs are cross-referenced from <a href="https://eqlfilter.com/" target="_blank" rel="noopener">eqlfilter.com</a>'s
+            item database, and drop/live status from <a href="https://eqlwiki.com/" target="_blank" rel="noopener">eqlwiki.com</a>'s
+            per-item drop location and content-era data. <strong>Drops</strong> are confirmed dropping in a live
+            Classic zone right now. <strong>Not Live Yet</strong> items (Epic Quest only) would drop the same way,
+            but are locked behind the still-unreleased Kunark expansion. <strong>Quest Rewards</strong> are handed
+            over directly by an NPC and never appear in a loot window, so they're shown for reference only and
+            can't be added to a filter. Within Drops/Not Live Yet, an item greyed out with an
+            <span class="id-badge">ID unknown</span> tag is missing a known Item ID and can't be added yet either.
+          </p>
+          <div id="classGrid" class="class-grid"></div>
+        </article>
+
+        <article id="itemsPanel" class="card panel" hidden>
+          <div class="bulk-row">
+            <h2>Class items</h2>
+            <div class="bulk-row-group">
+              <label for="addAsAction" class="muted-note">Add checked items as</label>
+              <select id="addAsAction" class="action-select"></select>
+              <button id="addCheckedBtn" class="primary">Add checked to filter</button>
+            </div>
+          </div>
+          <div id="classItemGroups"></div>
+        </article>
+
+        <article class="card panel">
+          <div class="bulk-row">
+            <h2>Your filter <span id="cartCount">0</span></h2>
+            <div class="bulk-row-group">
+              <input id="charName" class="add-item-input" type="text" placeholder="Character" />
+              <input id="serverName" class="add-item-input" type="text" placeholder="Server" />
+              <button id="downloadCartBtn" class="primary">Download Filter</button>
+              <button id="clearCartBtn" class="ghost">Clear</button>
+            </div>
+          </div>
+          <p class="dropzone-help">Open the downloaded file in a text editor and copy its item rows into your
+            existing loot filter, or load it in the <a href="lootfilter-editor.html">Lootfilter Editor</a> to
+            fine-tune it first.</p>
+          <div class="table-wrap">
+            <table id="cartTable">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Item ID</th>
+                  <th>Action</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <footer class="site-footer">
+        <p>Version 1.1</p>
+        <p>Created by MetalJacx (Discord: @metaljacx), EQLC: Metaljacx - Neriak</p>
+      </footer>
+    </main>
+  </div>
+
+  <script src="theme.js"></script>
+  <script src="epic-quest-items.js"></script>
+  <script src="sky-quest-items.js"></script>
+  <script src="lootfilter-format.js"></script>
+  <script src="quest-lootfilter.js"></script>
+  <script src="footer-disclaimer.js"></script>
+  <script>
+    window.EQLTheme.initThemeToggle(document.getElementById("themeToggle"));
+  </script>
+</body>
+</html>

@@ -99,10 +99,7 @@ function attachFilterDropdownEvents() {
 }
 
 function applyTheme(themeName) {
-  const theme = themeName === "light" ? "light" : "dark";
-  document.body.setAttribute("data-theme", theme);
-  window.localStorage.setItem("eql_theme", theme);
-  themeToggleBtn.textContent = theme === "dark" ? "Switch to Light" : "Switch to Dark";
+  window.EQLTheme.applyTheme(themeName, themeToggleBtn);
   setStatus(statusNode.textContent, statusIsError);
 }
 
@@ -112,9 +109,7 @@ function toggleTheme() {
 }
 
 function initTheme() {
-  const stored = window.localStorage.getItem("eql_theme");
-  const preferredDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-  applyTheme(stored || (preferredDark ? "dark" : "light"));
+  applyTheme(window.EQLTheme.preferredTheme());
 }
 
 function setStatus(message, isError = false) {
