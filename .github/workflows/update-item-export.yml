@@ -43,5 +43,10 @@ jobs:
             echo "No changes to the export."
           else
             git commit -m "Update item database export"
+            # main may have moved since checkout (e.g. an unrelated commit
+            # landing while this job was running) -- rebase onto the latest
+            # before pushing instead of failing on a stale non-fast-forward.
+            git fetch origin main
+            git rebase origin/main
             git push
           fi
