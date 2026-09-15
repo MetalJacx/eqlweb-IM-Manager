@@ -1,0 +1,37 @@
+name = "eql-item-db"
+main = "src/index.js"
+compatibility_date = "2024-09-01"
+
+# Restricts CORS to these origins instead of "*" -- comma-separated, no
+# spaces. The Worker reflects back whichever of these actually made the
+# request (browsers require a single value, not a list). Includes the
+# production domain (from frontend/CNAME), the raw GitHub Pages fallback
+# in case the custom domain isn't resolving yet, and local dev origins so
+# `python -m http.server` testing keeps working.
+[vars]
+ALLOWED_ORIGIN = "https://eqlinvmanager.com,https://www.eqlinvmanager.com,https://metaljacx.github.io,http://127.0.0.1:4173,http://localhost:4173"
+# MAX_SUBMISSIONS_PER_DAY = "20"
+
+# Set with: wrangler secret put TURNSTILE_SECRET_KEY
+# Enables Cloudflare Turnstile verification on /api/submit once configured.
+# Leave unset to skip verification (fine for local testing, not recommended
+# for a public deployment that anyone can hit).
+
+# Set with: wrangler secret put EXPORT_TOKEN
+# Gates GET /api/export behind `Authorization: Bearer <token>`. This is what
+# keeps public bulk access free of Worker/D1 cost: the scheduled GitHub
+# Action is the only caller, and everyone else downloads the static file it
+# produces instead of hitting this endpoint. Set the same value as the
+# ITEM_DB_EXPORT_TOKEN secret in the GitHub repo (see worker/README.md).
+
+[[d1_databases]]
+binding = "DB"
+database_name = "eql-item-db"
+database_id = "ab635462-5185-4d74-9e63-1420fae0e974"
+
+# Runs every 15 minutes to promote items that already have 5+ confirmations
+# but were held at "emerging" by the 30-minute time-span requirement -- so
+# Verified status arrives on its own once enough time has passed, not only
+# when a new, unrelated submission happens to touch that item again.
+[triggers]
+crons = ["*/15 * * * *"]

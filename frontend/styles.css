@@ -344,6 +344,23 @@ button:hover { transform: translateY(-1px); }
   color: var(--ink);
 }
 
+a.ghost,
+a.primary {
+  display: inline-block;
+  font: inherit;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 120ms ease, background 120ms ease;
+}
+
+a.ghost:hover,
+a.primary:hover {
+  transform: translateY(-1px);
+}
+
 .toggle-theme {
   white-space: nowrap;
   padding: 5px 9px;
@@ -471,6 +488,14 @@ button:hover { transform: translateY(-1px); }
 .content-grid.single-panel {
   grid-template-columns: minmax(0, 1fr);
 }
+
+.stack {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.stack .controls { margin-top: 0; }
 
 .content-grid.details-collapsed {
   grid-template-columns: minmax(0, 1fr) 58px;
@@ -901,4 +926,128 @@ pre {
 .category-drop h4 { color: var(--success); }
 .category-not-live h4 { color: var(--warning); }
 .category-reward h4 { color: var(--muted); }
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+
+.status-badge.unverified { color: var(--muted); background: color-mix(in srgb, var(--muted) 12%, transparent); }
+.status-badge.emerging { color: var(--warning); background: color-mix(in srgb, var(--warning) 14%, transparent); }
+.status-badge.verified { color: var(--success); background: color-mix(in srgb, var(--success) 14%, transparent); }
+.status-badge.disputed { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
+
+.disclosure-box {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.disclosure-box strong { color: var(--ink); }
+
+.config-warning {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--warning);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  color: var(--ink);
+  font-size: 0.86rem;
+}
+
+.preview-summary {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+
+.claims-breakdown {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  font-size: 0.82rem;
+}
+
+.claims-breakdown li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--surface-3);
+}
+
+.claims-breakdown .claim-count { color: var(--muted); font-family: "IBM Plex Mono", monospace; }
+
+.item-row-expandable { cursor: pointer; }
+.item-row-expandable:hover { background: var(--table-row-alt); }
+
+.detail-row td {
+  background: var(--surface-3);
+  padding: 8px 12px;
+}
+
+.browse-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+
+/* Compact table for the leaderboard sidebar (clamp(260px, 22vw, 380px) wide)
+   -- the generic `table` rule's 620px min-width is meant for the wide,
+   scrollable data tables, not this narrow four-column list. */
+#leaderboardTable {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+#leaderboardTable th,
+#leaderboardTable td {
+  padding: 6px 6px;
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#leaderboardTable th:first-child,
+#leaderboardTable td:first-child {
+  width: 24px;
+}
+
+#leaderboardTable th:last-child,
+#leaderboardTable td:last-child {
+  width: 42px;
+  overflow: visible;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 

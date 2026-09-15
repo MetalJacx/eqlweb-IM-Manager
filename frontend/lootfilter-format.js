@@ -48,6 +48,39 @@ async function decodeTextFile(file) {
   }
 }
 
+function parseLootFilterLines(text) {
+  const lines = text.split(/\r\n|\n|\r/);
+  let header = null;
+  const rows = [];
+  const warnings = [];
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (line.startsWith("#")) continue;
+    if (line.startsWith("[")) {
+      if (header === null) header = line;
+      continue;
+    }
+    const parts = line.split("^");
+    if (parts.length !== 4) {
+      warnings.push(`Skipped unrecognized line: ${line}`);
+      continue;
+    }
+    const [idRaw, filterRaw, iconRaw, nameRaw] = parts.map((p) => p.trim());
+    const itemId = Number(idRaw);
+    const filterId = Number(filterRaw);
+    const iconId = Number(iconRaw);
+    if (!Number.isFinite(itemId) || !Number.isFinite(iconId) || !nameRaw || !FILTER_ORDER.includes(filterId)) {
+      warnings.push(`Skipped malformed row: ${line}`);
+      continue;
+    }
+    rows.push({ itemId, filterId, iconId, name: nameRaw });
+  }
+
+  return { headerLine: header || DEFAULT_HEADER, rows, warnings };
+}
+
 function actionSelectClass(filterId) {
   return `action-select action-${filterId}`;
 }

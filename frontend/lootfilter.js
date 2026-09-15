@@ -46,46 +46,24 @@ function setStatus(message, isError = false) {
 }
 
 function parseLootFilter(text) {
-  const lines = text.split(/\r\n|\n|\r/);
-  let header = null;
+  const { headerLine, rows, warnings } = parseLootFilterLines(text);
   const parsed = [];
-  const warnings = [];
   const seenIds = new Set();
 
-  for (const raw of lines) {
-    const line = raw.trim();
-    if (!line) continue;
-    if (line.startsWith("#")) continue;
-    if (line.startsWith("[")) {
-      if (header === null) header = line;
+  for (const row of rows) {
+    if (seenIds.has(row.itemId)) {
+      warnings.push(`Duplicate item id ${row.itemId}, kept last occurrence`);
+      const existing = parsed.find((e) => e.itemId === row.itemId);
+      existing.filterId = row.filterId;
+      existing.iconId = row.iconId;
+      existing.name = row.name;
       continue;
     }
-    const parts = line.split("^");
-    if (parts.length !== 4) {
-      warnings.push(`Skipped unrecognized line: ${line}`);
-      continue;
-    }
-    const [idRaw, filterRaw, iconRaw, nameRaw] = parts.map((p) => p.trim());
-    const itemId = Number(idRaw);
-    const filterId = Number(filterRaw);
-    const iconId = Number(iconRaw);
-    if (!Number.isFinite(itemId) || !Number.isFinite(iconId) || !nameRaw || !FILTER_ORDER.includes(filterId)) {
-      warnings.push(`Skipped malformed row: ${line}`);
-      continue;
-    }
-    if (seenIds.has(itemId)) {
-      warnings.push(`Duplicate item id ${itemId}, kept last occurrence`);
-      const existing = parsed.find((e) => e.itemId === itemId);
-      existing.filterId = filterId;
-      existing.iconId = iconId;
-      existing.name = nameRaw;
-      continue;
-    }
-    seenIds.add(itemId);
-    parsed.push({ itemId, filterId, iconId, name: nameRaw });
+    seenIds.add(row.itemId);
+    parsed.push({ ...row });
   }
 
-  return { headerLine: header || DEFAULT_HEADER, entries: parsed, warnings };
+  return { headerLine, entries: parsed, warnings };
 }
 
 function getCounts() {

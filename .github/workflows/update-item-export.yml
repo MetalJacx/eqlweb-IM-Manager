@@ -1,0 +1,47 @@
+name: Update Item Database Export
+
+on:
+  schedule:
+    - cron: "17 6 * * *" # once daily
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    if: ${{ vars.ITEM_DB_API_BASE != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch export from the item database Worker
+        env:
+          API_BASE: ${{ vars.ITEM_DB_API_BASE }}
+          EXPORT_TOKEN: ${{ secrets.ITEM_DB_EXPORT_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p frontend/data
+          curl -sf -H "Authorization: Bearer ${EXPORT_TOKEN}" "${API_BASE}/api/export" -o frontend/data/items.json
+          jq 'if (.items | type) != "array" then error("malformed export: missing items array") else . end' frontend/data/items.json > /dev/null
+
+      - name: Convert to CSV
+        run: |
+          set -euo pipefail
+          jq -r '
+            (["item_id","name","icon_id","confirmations","status","updated_at"] | @csv),
+            (.items[] | [.item_id, .name, .icon_id, .confirmations, .status, .updated_at] | @csv)
+          ' frontend/data/items.json > frontend/data/items.csv
+
+      - name: Commit if changed
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add frontend/data/items.json frontend/data/items.csv
+          if git diff --cached --quiet; then
+            echo "No changes to the export."
+          else
+            git commit -m "Update item database export"
+            git push
+          fi

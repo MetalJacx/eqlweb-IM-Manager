@@ -4,3 +4,7 @@ __pycache__/
 .venv/
 .env
 *.log
+
+# worker/ (Cloudflare Worker) build & local dev state
+node_modules/
+.wrangler/

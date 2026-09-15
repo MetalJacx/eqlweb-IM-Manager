@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Item Database - EQL Inventory Manager Tool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <nav class="app-rail" aria-label="Tools">
+      <a class="rail-item" href="index.html">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l9-4 9 4-9 4-9-4z"/><path d="M3 8v8l9 4 9-4V8"/><path d="M12 12v8"/></svg>
+        <span class="rail-label">Inventory Cleaner</span>
+      </a>
+      <a class="rail-item" href="quest-lootfilter.html">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h9a3 3 0 0 1 3 3v10a3 3 0 0 0 3 3"/><path d="M6 4a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h12"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+        <span class="rail-label">Quest LootFilter</span>
+      </a>
+      <a class="rail-item" href="lootfilter-editor.html">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        <span class="rail-label">Lootfilter Editor</span>
+      </a>
+      <a class="rail-item active" href="item-database.html" aria-current="page">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/><path d="M4 11v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/></svg>
+        <span class="rail-label">Item Database</span>
+      </a>
+    </nav>
+    <main class="shell">
+      <header class="hero card reveal">
+        <div class="hero-top">
+          <div class="hero-main">
+            <h1>Item Database</h1>
+            <span class="beta-badge">Beta</span>
+          </div>
+          <button id="themeToggle" class="ghost toggle-theme" type="button">Switch to Light</button>
+        </div>
+        <p class="privacy-note">🌐 This is the one tab that talks to a server. Uploading a loot filter here sends item IDs, item names, and icon IDs to a shared community database — nothing else, and nothing from the rest of this site. If you add a name/server below, that's sent too, and only used to credit you on the Top Uploaders leaderboard.</p>
+        <p id="apiConfigWarning" class="config-warning" hidden>
+          No database server is configured yet (<code>frontend/api-config.js</code> is blank). See
+          <code>worker/README.md</code> for how to deploy one. Browsing and contributing are disabled until then.
+        </p>
+      </header>
+
+      <div class="content-grid reveal delay-1">
+        <div class="stack">
+          <section class="controls card">
+            <div class="field">
+              <div class="field-label-row">
+                <label for="filterFile">Contribute from a Loot Filter</label>
+                <button id="fileHelpToggle" class="help-toggle" type="button" aria-expanded="false" aria-controls="fileHelpPanel" aria-label="What gets sent?">?</button>
+              </div>
+              <p id="fileHelpPanel" class="help-panel" hidden>
+                Every row you've set in your loot filter (<code>LF_&lt;Character&gt;_&lt;Server&gt;.ini</code>) already
+                pairs an item ID with an item name. Load your filter here, review exactly what will be sent below, then
+                choose to submit it. Nothing is sent automatically just from loading the file.
+              </p>
+              <div id="dropZone" class="dropzone" role="button" tabindex="0" aria-label="Drop a loot filter ini file here or click to choose">
+                <p id="fileName" class="dropzone-file">No file selected</p>
+                <p class="dropzone-help">Drag and drop your LF_*.ini file here, or click to browse.</p>
+              </div>
+              <input id="filterFile" type="file" accept=".ini,text/plain" hidden />
+            </div>
+            <div class="add-item-row">
+              <input id="contributorName" class="add-item-input" type="text" placeholder="Name (optional, for the leaderboard)" maxlength="40" />
+              <input id="contributorServer" class="add-item-input" type="text" placeholder="Server (optional)" maxlength="40" />
+            </div>
+            <p class="dropzone-help">Leave these blank to contribute anonymously. Filled in automatically from your file name when possible.</p>
+            <div class="button-row">
+              <button id="loadBtn" class="ghost">Load & Preview</button>
+              <button id="submitBtn" class="primary" disabled>Submit to Community Database</button>
+              <button id="clearBtn" class="ghost">Clear</button>
+            </div>
+            <p id="previewSummary" class="preview-summary" hidden></p>
+            <p id="status" class="status">Choose a loot filter file and click Load &amp; Preview.</p>
+          </section>
+
+          <article class="card panel">
+            <h2>Download the Full Dataset</h2>
+            <p class="dropzone-help">
+              A snapshot of every item in the database, regenerated daily. This is a plain static file — free to
+              download and reuse in your own tools, no rate limits, no server calls. Each row includes a
+              <code>status</code> field, so you can decide for yourself whether to trust unverified/disputed rows
+              or filter down to just <code>verified</code>.
+            </p>
+            <div class="button-row">
+              <a id="downloadJsonLink" class="ghost" href="data/items.json" download>Download items.json</a>
+              <a id="downloadCsvLink" class="ghost" href="data/items.csv" download>Download items.csv</a>
+            </div>
+            <p id="exportMeta" class="muted-note"></p>
+          </article>
+        </div>
+
+        <aside class="card panel">
+          <h2>Top Uploaders</h2>
+          <p class="dropzone-help">Most items contributed, all time. Add a name above to appear here.</p>
+          <div class="table-wrap">
+            <table id="leaderboardTable">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Name</th>
+                  <th>Server</th>
+                  <th>#</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </aside>
+      </div>
+
+      <section class="workspace reveal delay-2">
+        <article class="card panel">
+          <h2>Browse the Database</h2>
+          <div class="browse-controls">
+            <input id="searchInput" class="search-input" type="search" placeholder="Search item name or ID..." />
+            <select id="statusFilter" class="action-select">
+              <option value="">All statuses</option>
+              <option value="verified">Verified</option>
+              <option value="emerging">Emerging</option>
+              <option value="unverified">Unverified</option>
+              <option value="disputed">Disputed</option>
+            </select>
+            <button id="searchBtn" class="ghost">Search</button>
+          </div>
+          <p class="legend">
+            <span><span class="status-badge verified">Verified</span> Widely confirmed by the community</span>
+            <span><span class="status-badge emerging">Emerging</span> Gaining confirmation</span>
+            <span><span class="status-badge unverified">Unverified</span> Not yet confirmed — double-check before acting on it</span>
+            <span><span class="status-badge disputed">Disputed</span> Conflicting reports — needs review</span>
+          </p>
+          <div class="table-wrap">
+            <table id="browseTable">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Item ID</th>
+                  <th>Icon ID</th>
+                  <th>Confirmations</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="pagination-nav">
+            <button id="prevPageBtn" class="ghost" type="button">Prev</button>
+            <span id="pageInfo" class="muted-note">Page 1</span>
+            <button id="nextPageBtn" class="ghost" type="button">Next</button>
+          </div>
+        </article>
+      </section>
+
+      <footer class="site-footer">
+        <p>Version 1.1</p>
+        <p>Created by MetalJacx (Discord: @metaljacx), EQLC: Metaljacx - Neriak</p>
+      </footer>
+    </main>
+  </div>
+
+  <script src="theme.js"></script>
+  <script src="api-config.js"></script>
+  <script src="lootfilter-format.js"></script>
+  <script src="item-database.js"></script>
+  <script src="footer-disclaimer.js"></script>
+  <script>
+    window.EQLTheme.initThemeToggle(document.getElementById("themeToggle"));
+  </script>
+</body>
+</html>
