@@ -38,15 +38,18 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Reset onto the current tip of main *before* diffing/committing,
+          # not whatever commit this job's checkout happened to start at.
+          # Makes this immune to staleness from a manual "Re-run jobs" (which
+          # replays the original checkout) or another push landing mid-run --
+          # those previously caused a rejected push or a rebase conflict
+          # against a data file that had already changed on main.
+          git fetch origin main
+          git reset --soft origin/main
           git add frontend/data/items.json frontend/data/items.csv
           if git diff --cached --quiet; then
             echo "No changes to the export."
           else
             git commit -m "Update item database export"
-            # main may have moved since checkout (e.g. an unrelated commit
-            # landing while this job was running) -- rebase onto the latest
-            # before pushing instead of failing on a stale non-fast-forward.
-            git fetch origin main
-            git rebase origin/main
             git push
           fi
