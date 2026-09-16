@@ -24,10 +24,6 @@ that has a backend and sends data off the user's device — everything else in
   (`*/15 * * * *`, see `[triggers]` in `wrangler.toml`) re-checks items stuck
   at `emerging` so they promote to `verified` on their own once enough time
   has passed, without needing another unrelated submission to touch them.
-- A trailing `+<tier>` on a name (this game's merge/enhancement stamp) never
-  counts as a competing name — `normalizeName()` strips it before grouping
-  claims, so "Cloth Shirt" and "Cloth Shirt +4" count as the same claim
-  instead of manufacturing a false dispute between tiers of the same item.
 
 ## Deploy
 
@@ -67,7 +63,6 @@ npm run dev
 - `GET /api/items/:itemId` — one item plus every competing name claim on record
 - `GET /api/export` — full unpaginated dump (`item_id`, `name`, `icon_id`, `confirmations`, `status`, `updated_at` for every item), gated by `EXPORT_TOKEN`
 - `GET /api/leaderboard` — top 10 submitters by distinct items contributed, `{ name, server, item_count }`. Only includes submitters who opted into a display name via `POST /api/submit`; anonymous contributions still count toward item confirmations but never appear here.
-- `POST /api/recompute-all` — reruns the aggregation logic over every existing item, gated by `EXPORT_TOKEN` like `/api/export`. Not part of normal operation; it's what you run once after changing the aggregation rules themselves (e.g. `normalizeName()`) so items whose stored status/name predate the change get corrected instead of waiting for an unrelated future submission to touch them.
 
 `POST /api/submit` also accepts optional `displayName` and `server` fields alongside `entries` — providing them opts that submitter ID into the leaderboard (stored in the `submitters` table, keyed by `submitter_id`, upserted on every submission that includes them). Neither field is identity-verified; treat leaderboard names the same as any other self-asserted value in this system.
 
