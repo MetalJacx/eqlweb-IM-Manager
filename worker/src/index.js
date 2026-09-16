@@ -413,15 +413,44 @@ async function handleRecomputeAll(request, env) {
 }
 
 async function handleLeaderboard(env, request) {
-  // Ranks by distinct items each submitter has claims for -- only
-  // submitters who opted into a display name show up; anonymous
+  // Ranks by distinct items claimed under each (name, server) identity --
+  // only submitters who opted into a display name show up; anonymous
   // contributions still count toward confirmations but aren't ranked.
+  //
+  // submitter_id is a per-browser UUID (see submitterId in handleSubmit),
+  // so the same person can end up with several submitter_ids if they clear
+  // storage or contribute from another browser/device. Grouping by
+  // submitter_id would then split one contributor into multiple
+  // leaderboard rows, so we group by the case/whitespace-normalized
+  // display name + server instead, and pick the most recently used
+  // casing of each for display.
   const { results } = await env.DB.prepare(
-    `SELECT s.display_name AS name, s.server AS server, COUNT(DISTINCT ic.item_id) AS item_count
-     FROM submitters s
-     JOIN item_claims ic ON ic.submitter_id = s.submitter_id
-     WHERE s.display_name IS NOT NULL
-     GROUP BY s.submitter_id
+    `WITH counts AS (
+       SELECT
+         LOWER(TRIM(s.display_name)) AS name_key,
+         LOWER(TRIM(COALESCE(s.server, ''))) AS server_key,
+         COUNT(DISTINCT ic.item_id) AS item_count
+       FROM submitters s
+       JOIN item_claims ic ON ic.submitter_id = s.submitter_id
+       WHERE s.display_name IS NOT NULL
+       GROUP BY name_key, server_key
+     ),
+     canonical AS (
+       SELECT
+         LOWER(TRIM(display_name)) AS name_key,
+         LOWER(TRIM(COALESCE(server, ''))) AS server_key,
+         display_name,
+         server,
+         ROW_NUMBER() OVER (
+           PARTITION BY LOWER(TRIM(display_name)), LOWER(TRIM(COALESCE(server, '')))
+           ORDER BY updated_at DESC
+         ) AS rn
+       FROM submitters
+       WHERE display_name IS NOT NULL
+     )
+     SELECT c.display_name AS name, c.server AS server, counts.item_count AS item_count
+     FROM counts
+     JOIN canonical c ON c.name_key = counts.name_key AND c.server_key = counts.server_key AND c.rn = 1
      ORDER BY item_count DESC
      LIMIT ?1`
   ).bind(LEADERBOARD_SIZE).all();
