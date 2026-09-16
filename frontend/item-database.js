@@ -81,14 +81,89 @@ function persistProfileField(key, value) {
   }
 }
 
-// Loot filters are named LF_<Character>_<Server>.ini (see lootfilter.js) -
-// prefill the leaderboard fields from that when they're still empty, so
-// most people never have to type anything.
+// Loot filters are named LF_<Character>_<Server>.ini (see lootfilter.js) and
+// inventory exports are named <Character>_<Server>-Inventory.txt (see
+// index.html's help panel) - prefill the leaderboard fields from either when
+// they're still empty, so most people never have to type anything.
 function prefillProfileFromFileName(fileName) {
-  const match = /^LF_(.+)_([^_]+)\.ini$/i.exec(fileName);
+  const match = /^LF_(.+)_([^_]+)\.ini$/i.exec(fileName)
+    || /^(.+)_([^_]+)-Inventory\.txt$/i.exec(fileName);
   if (!match) return;
   if (!contributorNameInput.value.trim()) contributorNameInput.value = match[1];
   if (!contributorServerInput.value.trim()) contributorServerInput.value = match[2];
+}
+
+// Distinguish the two supported file formats without relying on the file
+// name: loot filter rows are `itemId^filterId^iconId^name`, inventory export
+// rows are tab-separated. Counting which delimiter shape actually shows up
+// in the file's lines is more robust than trusting the extension.
+function detectFileFormat(text) {
+  const lines = text.split(/\r\n|\n|\r/).map((l) => l.trim()).filter(Boolean);
+  const caretLines = lines.filter((l) => l.split("^").length === 4).length;
+  const tabLines = lines.filter((l) => l.includes("\t")).length;
+  if (caretLines > 0 && caretLines >= tabLines) return "lootfilter";
+  if (tabLines > 0) return "inventory";
+  return null;
+}
+
+// Extracts item_id/name pairs from an EQL `/outputfile inventory` export
+// (see analyzer.js's parseInventory for the full format, including the
+// KeyRing section split). Icon IDs aren't present in this file type, so
+// they're always sent as 0 - the community database already treats icon_id
+// as optional and fills it in from a loot filter submission for the same
+// item when one arrives.
+function parseInventoryLines(text) {
+  const lines = text.split(/\r\n|\n|\r/);
+  const rows = [];
+  const warnings = [];
+
+  let keyringIndex = lines.length;
+  for (let i = 0; i < lines.length; i += 1) {
+    if (lines[i].startsWith("KeyRing\t")) {
+      keyringIndex = i;
+      break;
+    }
+  }
+
+  for (let i = 1; i < keyringIndex; i += 1) {
+    const line = lines[i];
+    if (!line.trim()) continue;
+    const parts = line.split("\t");
+    if (parts.length < 5) {
+      warnings.push(`Skipped unrecognized line: ${line}`);
+      continue;
+    }
+    const name = parts[1];
+    const itemId = Number.parseInt(parts[2], 10);
+    if (!Number.isInteger(itemId) || itemId === 0 || name === "Empty") continue;
+    if (name.includes("(Exaltation)")) continue;
+    rows.push({ itemId, name, iconId: 0 });
+  }
+
+  if (keyringIndex < lines.length) {
+    for (let i = keyringIndex + 1; i < lines.length; i += 1) {
+      const line = lines[i];
+      if (!line.trim()) continue;
+      const parts = line.split("\t");
+      if (parts.length < 3) continue;
+      const keyringType = parts[0];
+      const name = parts[1];
+      const itemId = Number.parseInt(parts[2], 10);
+      if (!Number.isInteger(itemId) || keyringType !== "Equipment") continue;
+      if (name.includes("(Exaltation)")) continue;
+      rows.push({ itemId, name, iconId: 0 });
+    }
+  }
+
+  // Worn/stacked copies of the same item repeat across inventory slots -
+  // dedupe by item_id+name so the preview count reflects distinct items,
+  // not slot count. The server dedupes again regardless, but a slot-count
+  // number here would be a confusing thing to show someone before submit.
+  const seen = new Map();
+  for (const row of rows) {
+    seen.set(`${row.itemId}|${row.name}`, row);
+  }
+  return { rows: [...seen.values()], warnings };
 }
 
 function setSelectedFile(file) {
@@ -105,12 +180,20 @@ function handleFiles(fileList) {
 
 async function loadAndPreview() {
   if (!selectedFile) {
-    setStatus("Choose a loot filter file first.", true);
+    setStatus("Choose a loot filter or inventory export file first.", true);
     return;
   }
   try {
     const text = await decodeTextFile(selectedFile);
-    const { rows, warnings } = parseLootFilterLines(text);
+    const format = detectFileFormat(text);
+    if (!format) {
+      setStatus("Unrecognized file. Upload a loot filter (LF_*.ini) or an inventory export (*-Inventory.txt).", true);
+      previewSummary.hidden = true;
+      submitBtn.disabled = true;
+      return;
+    }
+
+    const { rows, warnings } = format === "lootfilter" ? parseLootFilterLines(text) : parseInventoryLines(text);
     pendingRows = rows.map((r) => ({ itemId: r.itemId, name: r.name, iconId: r.iconId }));
 
     if (pendingRows.length === 0) {
@@ -122,11 +205,12 @@ async function loadAndPreview() {
 
     const minId = Math.min(...pendingRows.map((r) => r.itemId));
     const maxId = Math.max(...pendingRows.map((r) => r.itemId));
+    const iconNote = format === "inventory" ? " (this file type has no icon IDs, so 0 is sent and filled in later by a loot filter upload)" : "";
     previewSummary.hidden = false;
-    previewSummary.textContent = `${pendingRows.length} item${pendingRows.length === 1 ? "" : "s"} ready to submit (IDs ${minId}-${maxId}). Only item_id, item_name, and icon_id are sent.`;
+    previewSummary.textContent = `${pendingRows.length} item${pendingRows.length === 1 ? "" : "s"} ready to submit (IDs ${minId}-${maxId}). Only item_id, item_name, and icon_id are sent${iconNote}.`;
 
     const warningNote = warnings.length ? ` (${warnings.length} line${warnings.length === 1 ? "" : "s"} skipped, see console)` : "";
-    if (warnings.length) console.warn("Loot filter parse warnings:", warnings);
+    if (warnings.length) console.warn("File parse warnings:", warnings);
     setStatus(`Loaded ${pendingRows.length} item(s) from ${selectedFile.name}${warningNote}. Review above, then submit.`);
     submitBtn.disabled = !apiBase();
   } catch {
@@ -141,7 +225,7 @@ async function submitEntries() {
     return;
   }
   if (pendingRows.length === 0) {
-    setStatus("Load a filter file first.", true);
+    setStatus("Load a file first.", true);
     return;
   }
 
@@ -187,7 +271,7 @@ function clearContribute() {
   fileInput.value = "";
   previewSummary.hidden = true;
   submitBtn.disabled = true;
-  setStatus("Choose a loot filter file and click Load & Preview.");
+  setStatus("Choose a loot filter or inventory export file and click Load & Preview.");
 }
 
 function statusBadge(status) {
