@@ -16,6 +16,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Sync to the latest main
+        # workflow_dispatch and schedule triggers pin the checkout to
+        # whatever commit was the tip of main when the run was *queued*, not
+        # when it *starts* -- and this workflow has been observed sitting
+        # queued for over an hour under Actions congestion, by which point
+        # unrelated commits had already landed on main. The later "reset
+        # --soft" step used to only move the branch pointer forward while
+        # leaving this stale checkout's tree in place, so committing just the
+        # two export files still committed the *rest* of the stale tree with
+        # them -- silently reverting every real commit that had landed while
+        # this run sat queued. Doing a full hard reset here, before anything
+        # is generated, means the working tree is never stale by the time
+        # something gets committed.
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git reset --hard origin/main
+
       - name: Fetch export from the item database Worker
         env:
           API_BASE: ${{ vars.ITEM_DB_API_BASE }}
@@ -40,21 +58,30 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Reset onto the current tip of main *before* diffing/committing,
-          # not whatever commit this job's checkout happened to start at.
-          # Makes this immune to staleness from a manual "Re-run jobs" (which
-          # replays the original checkout) or another push landing mid-run --
-          # those previously caused a rejected push or a rebase conflict
-          # against a data file that had already changed on main.
-          git fetch origin main
-          git reset --soft origin/main
           git add frontend/data/items.json frontend/data/items.csv
           if git diff --cached --quiet; then
             echo "No changes to the export."
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             git commit -m "Update item database export"
-            git push
+            # Guard against another push landing on main between the sync
+            # step above and this push: retry against the new tip rather
+            # than risk writing a stale commit. Never force-push -- a real
+            # conflict (someone else's commit also touching the export
+            # files) should fail the job loudly, not overwrite their work.
+            pushed=false
+            for attempt in 1 2 3; do
+              if git push; then
+                pushed=true
+                break
+              fi
+              git fetch origin main
+              git rebase origin/main
+            done
+            if [ "$pushed" != "true" ]; then
+              echo "::error::Could not push the export commit after 3 attempts" >&2
+              exit 1
+            fi
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
