@@ -11,7 +11,11 @@
 //   2-4      -> emerging
 //   5+ AND confirmations span >= 30 minutes -> verified
 // Disputed overrides all of the above whenever a runner-up name has
-// meaningful independent support of its own.
+// meaningful independent support of its own -- except a trailing "+<tier>"
+// (this game's merge/enhancement stamp) never counts as a competing name,
+// since "Cloth Shirt" and "Cloth Shirt +4" are the same item at different
+// tiers, not two people disagreeing about what it's called (see
+// normalizeName below).
 //
 // The 30-minute span requirement exists alongside the distinct-submitter
 // count specifically to blunt a scripted Sybil attack: submitterId is a
@@ -75,6 +79,17 @@ function deriveStatus(leaderConfirmations, runnerUpConfirmations, spanMs) {
 // timezone marker, which Date() alone would otherwise parse as local time.
 function parseSqliteUtc(text) {
   return new Date(`${text.replace(" ", "T")}Z`).getTime();
+}
+
+// A trailing "+<tier>" on an item name is this game's merge/enhancement
+// stamp, not a different item -- "Cloth Shirt", "Cloth Shirt +3", and
+// "Cloth Shirt +4" all share one item_id because someone who's merged
+// their gear further is still confirming the same base item, not
+// proposing a competing name for it. Strip it before grouping claims so
+// tier variants aren't treated as disputes with each other.
+const TIER_SUFFIX_RE = /\s*\+\d+\s*$/;
+function normalizeName(name) {
+  return name.replace(TIER_SUFFIX_RE, "").trim();
 }
 
 // Item names flow into a CSV export (frontend/data/items.csv) that's offered
@@ -145,39 +160,58 @@ async function verifyTurnstile(token, env, request) {
 async function recomputeItems(env, itemIds) {
   if (!itemIds.length) return [];
 
-  // Pull every candidate name for every touched item in a handful of
-  // chunked queries (instead of one query per item) -- D1 caps how many
-  // bound parameters a single statement can take, so IN (...) is batched
-  // in groups rather than sent as one query per item_id.
+  // Pull every raw claim for every touched item in a handful of chunked
+  // queries (instead of one query per item) -- D1 caps how many bound
+  // parameters a single statement can take, so IN (...) is batched in
+  // groups rather than sent as one query per item_id. Grouping by name
+  // happens in JS (on the *normalized* name, see normalizeName) rather
+  // than in SQL, since SQLite has no built-in regex replace to strip tier
+  // suffixes before grouping.
   const CHUNK_SIZE = 100;
-  const nameRowsByItem = new Map(); // itemId -> [{name, icon_id, confirmations, first_claim_at, last_claim_at}, ...] desc by confirmations
+  const claimsByItem = new Map(); // itemId -> raw claim rows
   for (let i = 0; i < itemIds.length; i += CHUNK_SIZE) {
     const chunk = itemIds.slice(i, i + CHUNK_SIZE);
     const placeholders = chunk.map((_, idx) => `?${idx + 1}`).join(",");
     const { results } = await env.DB.prepare(
-      `SELECT item_id, name, MAX(icon_id) AS icon_id, COUNT(DISTINCT submitter_id) AS confirmations,
-              MIN(created_at) AS first_claim_at, MAX(created_at) AS last_claim_at
-       FROM item_claims WHERE item_id IN (${placeholders})
-       GROUP BY item_id, name ORDER BY item_id ASC, confirmations DESC, name ASC`
+      `SELECT item_id, name, icon_id, submitter_id, created_at
+       FROM item_claims WHERE item_id IN (${placeholders})`
     ).bind(...chunk).all();
     for (const row of results) {
-      if (!nameRowsByItem.has(row.item_id)) nameRowsByItem.set(row.item_id, []);
-      nameRowsByItem.get(row.item_id).push(row);
+      if (!claimsByItem.has(row.item_id)) claimsByItem.set(row.item_id, []);
+      claimsByItem.get(row.item_id).push(row);
     }
   }
 
   const updatedItems = [];
   const upsertStmts = [];
   for (const itemId of itemIds) {
-    const nameRows = nameRowsByItem.get(itemId);
-    if (!nameRows || !nameRows.length) continue;
+    const claims = claimsByItem.get(itemId);
+    if (!claims || !claims.length) continue;
 
-    const leader = nameRows[0];
-    const runnerUp = nameRows[1];
-    const spanMs = parseSqliteUtc(leader.last_claim_at) - parseSqliteUtc(leader.first_claim_at);
+    const groups = new Map(); // normalizedName -> { submitters: Set, iconId, firstAt, lastAt }
+    for (const claim of claims) {
+      const key = normalizeName(claim.name);
+      let group = groups.get(key);
+      if (!group) {
+        group = { submitters: new Set(), iconId: claim.icon_id, firstAt: claim.created_at, lastAt: claim.created_at };
+        groups.set(key, group);
+      }
+      group.submitters.add(claim.submitter_id);
+      if (claim.icon_id > group.iconId) group.iconId = claim.icon_id;
+      if (claim.created_at < group.firstAt) group.firstAt = claim.created_at;
+      if (claim.created_at > group.lastAt) group.lastAt = claim.created_at;
+    }
+
+    const sorted = [...groups.entries()]
+      .map(([name, g]) => ({ name, iconId: g.iconId, confirmations: g.submitters.size, firstAt: g.firstAt, lastAt: g.lastAt }))
+      .sort((a, b) => b.confirmations - a.confirmations || a.name.localeCompare(b.name));
+
+    const leader = sorted[0];
+    const runnerUp = sorted[1];
+    const spanMs = parseSqliteUtc(leader.lastAt) - parseSqliteUtc(leader.firstAt);
     const status = deriveStatus(leader.confirmations, runnerUp ? runnerUp.confirmations : 0, spanMs);
     const disputedNames = status === "disputed"
-      ? JSON.stringify(nameRows.filter((r) => r.confirmations >= DISPUTE_MIN_CONFIRMATIONS)
+      ? JSON.stringify(sorted.filter((r) => r.confirmations >= DISPUTE_MIN_CONFIRMATIONS)
           .map((r) => ({ name: r.name, confirmations: r.confirmations })))
       : null;
 
@@ -191,7 +225,7 @@ async function recomputeItems(env, itemIds) {
          status = excluded.status,
          disputed_names = excluded.disputed_names,
          updated_at = datetime('now')`
-    ).bind(itemId, leader.name, leader.icon_id, leader.confirmations, status, disputedNames));
+    ).bind(itemId, leader.name, leader.iconId, leader.confirmations, status, disputedNames));
 
     updatedItems.push({ itemId, name: leader.name, confirmations: leader.confirmations, status });
   }
@@ -332,16 +366,50 @@ async function handleGetItem(itemId, env, request) {
   ).bind(itemId).first();
   if (!item) return json({ error: "not found" }, 404, env, request);
 
-  const { results: claims } = await env.DB.prepare(
-    `SELECT name, icon_id, COUNT(DISTINCT submitter_id) AS confirmations
-     FROM item_claims WHERE item_id = ?1 GROUP BY name, icon_id ORDER BY confirmations DESC`
+  const { results: rawClaims } = await env.DB.prepare(
+    `SELECT name, icon_id, submitter_id FROM item_claims WHERE item_id = ?1`
   ).bind(itemId).all();
+
+  const groups = new Map();
+  for (const claim of rawClaims) {
+    const key = normalizeName(claim.name);
+    let group = groups.get(key);
+    if (!group) {
+      group = { iconId: claim.icon_id, submitters: new Set() };
+      groups.set(key, group);
+    }
+    group.submitters.add(claim.submitter_id);
+    if (claim.icon_id > group.iconId) group.iconId = claim.icon_id;
+  }
+  const claims = [...groups.entries()]
+    .map(([name, g]) => ({ name, icon_id: g.iconId, confirmations: g.submitters.size }))
+    .sort((a, b) => b.confirmations - a.confirmations || a.name.localeCompare(b.name));
 
   return json({
     ...item,
     disputed_names: item.disputed_names ? JSON.parse(item.disputed_names) : null,
     claims,
   }, 200, env, request);
+}
+
+async function handleRecomputeAll(request, env) {
+  // Reruns recomputeItems over every existing item -- for retroactively
+  // applying a change to the aggregation rules themselves (like the tier-
+  // suffix normalization above) to items whose stored status/name predate
+  // it. Ordinary submissions never need this; it's an admin maintenance
+  // action, gated the same way as /api/export since it's not meant for
+  // public traffic.
+  if (env.EXPORT_TOKEN) {
+    const auth = request.headers.get("Authorization") || "";
+    if (auth !== `Bearer ${env.EXPORT_TOKEN}`) {
+      return json({ error: "unauthorized" }, 401, env, request);
+    }
+  }
+
+  const { results } = await env.DB.prepare(`SELECT item_id FROM items`).all();
+  const itemIds = results.map((r) => r.item_id);
+  const updated = await recomputeItems(env, itemIds);
+  return json({ recomputed: updated.length }, 200, env, request);
 }
 
 async function handleLeaderboard(env, request) {
@@ -393,6 +461,9 @@ export default {
       }
       if (url.pathname === "/api/leaderboard" && request.method === "GET") {
         return await handleLeaderboard(env, request);
+      }
+      if (url.pathname === "/api/recompute-all" && request.method === "POST") {
+        return await handleRecomputeAll(request, env);
       }
       const itemMatch = url.pathname.match(/^\/api\/items\/(\d+)$/);
       if (itemMatch && request.method === "GET") {
